@@ -67,7 +67,7 @@ jobs:
 
       - name: Build APK
         working-directory: ${{ env.APP_DIR }}/android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-daemon -Pandroid.disableCxxWarningsAsErrors=true --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
