@@ -1,0 +1,70 @@
+name: Build APK
+
+on:
+  workflow_call:
+    secrets:
+      CLASSROOM_PAT:
+        required: true
+    inputs:
+      repo:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          repository: ${{ inputs.repo }}
+          token: ${{ secrets.CLASSROOM_PAT }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Find app directory
+        id: find_app
+        run: |
+          set -e
+
+          # Find all package.json files
+          dirs=$(find . -name package.json -not -path "*/node_modules/*" -exec dirname {} \;)
+
+          for dir in $dirs; do
+            if [ -f "$dir/app.json" ] || [ -f "$dir/app.config.js" ]; then
+              echo "Found Expo app in $dir"
+              echo "APP_DIR=$dir" >> $GITHUB_ENV
+              exit 0
+            fi
+
+            if grep -q '"expo"' "$dir/package.json"; then
+              echo "Found Expo dependency in $dir"
+              echo "APP_DIR=$dir" >> $GITHUB_ENV
+              exit 0
+            fi
+          done
+
+          echo "❌ Could not find Expo app directory"
+          exit 1
+
+      - name: Install deps
+        working-directory: ${{ env.APP_DIR }}
+        run: npm install
+
+      - name: Expo prebuild
+        working-directory: ${{ env.APP_DIR }}
+        run: npx expo prebuild
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build APK
+        working-directory: ${{ env.APP_DIR }}/android
+        run: ./gradlew assembleRelease

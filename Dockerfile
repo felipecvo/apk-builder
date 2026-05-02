@@ -1,15 +1,24 @@
-FROM eclipse-temurin:17 AS android_builder
+FROM eclipse-temurin:17-jdk AS binary-source
+
+# Stage 2: Final Debian-based image
+FROM debian:trixie-slim
+ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=binary-source $JAVA_HOME $JAVA_HOME
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 ENV ANDROID_HOME=/opt/android-sdk
 
 RUN mkdir -p ${ANDROID_HOME}
 
-RUN apt-get update && apt-get install -y unzip wget \
-  build-essential \
-  cmake \
-  ninja-build \
-  node \
-  python3
+RUN rm -rf /var/lib/apt/lists/* \
+  && apt-get clean \
+  && apt-get update \
+  && apt-get install -y unzip wget \
+    build-essential \
+    cmake \
+    ninja-build \
+    nodejs npm \
+    python3
 
 RUN wget https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip -O sdk.zip \
         && unzip sdk.zip \
