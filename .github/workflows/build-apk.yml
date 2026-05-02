@@ -53,7 +53,7 @@ jobs:
 
       - name: Install deps
         working-directory: ${{ env.APP_DIR }}
-        run: npm install
+        run: npm ci
 
       - name: Expo prebuild
         working-directory: ${{ env.APP_DIR }}
